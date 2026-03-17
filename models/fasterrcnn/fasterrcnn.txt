@@ -1,0 +1,2 @@
+Faster RCNN 모델 가중치 저장하는 폴더입니다.
+.gitignore 예정입니다.
