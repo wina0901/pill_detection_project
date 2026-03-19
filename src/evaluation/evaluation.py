@@ -6,6 +6,54 @@ from collections import defaultdict
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+# =========================================================
+# category_id가 원본 COCO 기준으로 맞춰진 리스트
+# =========================================================
+
+def _normalize_predictions(predictions, model2orig=None):
+    normalized = []
+
+    for p in predictions:
+        pred_cat = int(p["category_id"])
+
+        if model2orig is not None:
+            if pred_cat not in model2orig:
+                # 매핑 안 되는 예측은 평가에서 제외
+                continue
+            pred_cat = int(model2orig[pred_cat])
+
+        normalized.append({
+            "image_id": int(p["image_id"]),
+            "category_id": pred_cat,
+            "bbox_xyxy": [
+                float(p["bbox_xyxy"][0]),
+                float(p["bbox_xyxy"][1]),
+                float(p["bbox_xyxy"][2]),
+                float(p["bbox_xyxy"][3]),
+            ],
+            "score": float(p["score"]),
+        })
+
+    return normalized
+
+# =========================================================
+# COCO GT에 존재하지 않는 image_id / category_id를 가진 예측 제거
+# =========================================================
+
+def _filter_predictions_for_coco(coco_gt, predictions):
+
+    valid_image_ids = set(coco_gt.getImgIds())
+    valid_cat_ids = set(coco_gt.getCatIds())
+
+    filtered = []
+    for p in predictions:
+        if int(p["image_id"]) not in valid_image_ids:
+            continue
+        if int(p["category_id"]) not in valid_cat_ids:
+            continue
+        filtered.append(p)
+
+    return filtered
 
 # =========================================================
 # bbox 유틸
@@ -81,9 +129,13 @@ def compute_precision_recall_from_predictions(
     gt_json_path,
     predictions,
     conf_threshold=0.25,
-    iou_threshold=0.5
+    iou_threshold=0.5,
+    model2orig=None
 ):
     gt_by_image = load_gt_from_coco_json(gt_json_path)
+
+    # 모델 label -> 원본 category_id 변환
+    predictions = _normalize_predictions(predictions, model2orig=model2orig)
 
     filtered_preds = [p for p in predictions if p["score"] >= conf_threshold]
     filtered_preds = sorted(filtered_preds, key=lambda x: x["score"], reverse=True)
@@ -104,7 +156,7 @@ def compute_precision_recall_from_predictions(
         best_gt_key = None
 
         for gt in gt_candidates:
-            if gt["category_id"] != pred_cat:
+            if int(gt["category_id"]) != pred_cat:
                 continue
 
             gt_key = (image_id, gt["ann_id"])
@@ -137,33 +189,78 @@ def compute_precision_recall_from_predictions(
         "iou_threshold": iou_threshold
     }
 
+# =========================================================
+# COCO 공식 mAP 0.75 : 0.95 정의
+# =========================================================
+def compute_map_75_to_95(coco_eval):
+ 
+    precision = coco_eval.eval["precision"]
+
+    if precision is None or precision.size == 0:
+        return 0.0
+
+    iou_thrs = coco_eval.params.iouThrs
+    valid_t = np.where(iou_thrs >= 0.75)[0]
+
+    if len(valid_t) == 0:
+        return 0.0
+
+    # area=all -> index 0
+    # maxDets=100 -> 마지막 index
+    selected = precision[valid_t, :, :, 0, -1]
+
+    # 유효하지 않은 값은 -1
+    selected = selected[selected > -1]
+
+    if selected.size == 0:
+        return 0.0
+
+    return float(np.mean(selected))
 
 # =========================================================
 # COCO 공식 mAP 계산
 # =========================================================
-def compute_coco_map(gt_json_path, predictions, temp_json_path="temp_eval.json"):
+def compute_coco_map(gt_json_path, predictions, temp_json_path="temp_eval.json", model2orig=None):
+    coco_gt = COCO(gt_json_path)
+
+    # 1) 모델 label -> 원본 COCO category_id 변환
+    predictions = _normalize_predictions(predictions, model2orig=model2orig)
+
+    # 2) GT에 없는 image_id / category_id 제거
+    predictions = _filter_predictions_for_coco(coco_gt, predictions)
+
+    # 3) 빈 예측이면 안전하게 0점 반환
+    if len(predictions) == 0:
+        return {
+            "mAP@50": 0.0,
+            "mAP@75:95": 0.0,
+            "coco_eval": None
+        }
+
     coco_results = convert_predictions_to_coco_results(predictions)
 
     with open(temp_json_path, "w", encoding="utf-8") as f:
         json.dump(coco_results, f, ensure_ascii=False)
 
-    coco_gt = COCO(gt_json_path)
-    coco_dt = coco_gt.loadRes(temp_json_path)
+    try:
+        coco_dt = coco_gt.loadRes(temp_json_path)
+    except AssertionError as e:
+        raise ValueError(
+            "COCO 평가용 prediction 포맷이 GT와 맞지 않습니다. "
+            "image_id 또는 category_id 매핑을 확인하세요."
+        ) from e
 
     coco_eval = COCOeval(coco_gt, coco_dt, "bbox")
+    coco_eval.params.imgIds = sorted({int(p["image_id"]) for p in predictions})
+
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
 
-    precision_tensor = coco_eval.eval["precision"]
-    iou_thrs = coco_eval.params.iouThrs
-
-    valid_iou_indices = [i for i, t in enumerate(iou_thrs) if t >= 0.75]
-    selected = precision_tensor[valid_iou_indices, :, :, 0, -1]
-    selected = selected[selected > -1]
-
-    map_75_95 = float(np.mean(selected)) if selected.size > 0 else 0.0
+    # COCO stats[1] = AP@0.50
+    # mAP@75:95 는 coco_eval.eval["precision"]에서 직접 계산
     map_50 = float(coco_eval.stats[1])
+    map_75_95 = compute_map_75_to_95(coco_eval)
 
     return {
         "mAP@50": round(map_50, 6),
@@ -180,19 +277,22 @@ def evaluate_all(
     predictions,
     conf_threshold=0.25,
     pr_iou_threshold=0.5,
-    temp_json_path="temp_eval.json"
+    temp_json_path="temp_eval.json",
+    model2orig=None
 ):
     map_result = compute_coco_map(
         gt_json_path=gt_json_path,
         predictions=predictions,
-        temp_json_path=temp_json_path
+        temp_json_path=temp_json_path,
+        model2orig=model2orig
     )
 
     pr_result = compute_precision_recall_from_predictions(
         gt_json_path=gt_json_path,
         predictions=predictions,
         conf_threshold=conf_threshold,
-        iou_threshold=pr_iou_threshold
+        iou_threshold=pr_iou_threshold,
+        model2orig=model2orig
     )
 
     result = {
@@ -320,7 +420,7 @@ def plot_compare_histories(histories, labels, metric_key="mAP@75:95", title=None
     plt.show()
 
 # 결과 변환 (YOLO)
-def convert_yolo_results(results, image_ids):
+def convert_yolo_results(results, image_ids, model2orig=None):
     predictions = []
 
     for result, image_id in zip(results, image_ids):
@@ -333,9 +433,16 @@ def convert_yolo_results(results, image_ids):
         labels = boxes.cls.cpu().numpy().astype(int)
 
         for box, score, label in zip(xyxy, scores, labels):
+            if model2orig is not None:
+                if int(label) not in model2orig:
+                    continue
+                category_id = int(model2orig[int(label)])
+            else:
+                category_id = int(label)
+
             predictions.append({
                 "image_id": int(image_id),
-                "category_id": int(label),
+                "category_id": category_id,
                 "bbox_xyxy": [float(box[0]), float(box[1]), float(box[2]), float(box[3])],
                 "score": float(score)
             })
@@ -343,7 +450,7 @@ def convert_yolo_results(results, image_ids):
     return predictions
 
 # 결과 변환 (Faster R-CNN / RetinaNet)
-def convert_torchvision_outputs(outputs, image_ids):
+def convert_torchvision_outputs(outputs, image_ids, model2orig=None):
     predictions = []
 
     for output, image_id in zip(outputs, image_ids):
@@ -352,9 +459,16 @@ def convert_torchvision_outputs(outputs, image_ids):
         labels = output["labels"].detach().cpu().numpy().astype(int)
 
         for box, score, label in zip(boxes, scores, labels):
+            if model2orig is not None:
+                if int(label) not in model2orig:
+                    continue
+                category_id = int(model2orig[int(label)])
+            else:
+                category_id = int(label)
+
             predictions.append({
                 "image_id": int(image_id),
-                "category_id": int(label),
+                "category_id": category_id,
                 "bbox_xyxy": [float(box[0]), float(box[1]), float(box[2]), float(box[3])],
                 "score": float(score)
             })
