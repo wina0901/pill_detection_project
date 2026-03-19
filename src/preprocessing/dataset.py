@@ -11,7 +11,7 @@ PyTorch Dataset / DataLoader 인터페이스
   from src.preprocessing.dataset import get_loaders
 
   BASE_DIR = '/content/drive/MyDrive/data/초급_프로젝트/dataset'
-  train_loader, val_loader, orig2model, num_classes = get_loaders(base_dir=BASE_DIR)
+  train_loader, val_loader, orig2model, num_classes, val_json = get_loaders(base_dir=BASE_DIR)
 
   ✅ 전처리 산출물(train_letterbox.json 등)이 없어도 괜찮습니다.
      get_loaders() 가 자동으로 전처리를 실행한 뒤 DataLoader를 반환합니다.
@@ -144,9 +144,10 @@ def build_df_from_json(json_path, img_dir):
       categories  : 클래스 목록 [{id, name}, ...]
 
     변환 결과 DataFrame 컬럼:
-      image_path  : 이미지 파일 절대 경로
-      image_id    : 이미지 식별자 (파일명에서 확장자 제거)
-      category_id : 원본 클래스 ID (COCO 기준)
+      image_path     : 이미지 파일 절대 경로
+      image_id       : 이미지 식별자 (파일명에서 확장자 제거)
+      coco_image_id  : 실제 COCO image_id (mAP 평가용)
+      category_id    : 원본 클래스 ID (COCO 기준)
       bbox_x      : BBox 좌상단 x 좌표
       bbox_y      : BBox 좌상단 y 좌표
       bbox_w      : BBox 너비
@@ -244,13 +245,10 @@ def _run_preprocessing_if_needed(base_dir):
     # sys.executable : 현재 실행 중인 파이썬 인터프리터 경로
     # Colab, 로컬, 가상환경 등 어떤 환경이든 올바른 파이썬으로 실행됩니다.
     import subprocess
-    result = subprocess.run(
+    subprocess.run(
         [sys.executable, preprocess_script],
         check=True  # 오류 발생 시 CalledProcessError 예외 발생 후 즉시 중단
     )
-
-    if result.returncode != 0:
-        raise RuntimeError("🚨 전처리 파이프라인 실행 중 오류가 발생했습니다.")
 
     print("\n✅ 전처리 완료! DataLoader 구성을 시작합니다.\n")
 
@@ -271,7 +269,7 @@ class OralDrugDataset(Dataset):
       target : {
           'boxes'    : [N, 4] float32 텐서  — [x1, y1, x2, y2] 형식
           'labels'   : [N]    int64 텐서    — 모델용 레이블 (1-based)
-          'image_id' : [1]    int64 텐서    — 배치 내 인덱스
+          'image_id' : [1]    int64 텐서    — 실제 COCO image_id
       }
       N = 해당 이미지의 객체(알약) 수
 
@@ -389,6 +387,7 @@ def get_loaders(base_dir, batch_size=2, num_workers=2):
                      model2orig = {v: k for k, v in orig2model.items()}
       num_classes  : background(0) 포함 전체 클래스 수
                      Faster R-CNN / RetinaNet 모델 정의 시 그대로 전달하세요.
+      val_json     : val_letterbox.json 경로 (mAP 평가 시 gt_json_path로 사용)
 
     【transforms 설명】
       train : ColorJitter(밝기/대비 ±20%) + ToImage + ToDtype
@@ -411,12 +410,13 @@ def get_loaders(base_dir, batch_size=2, num_workers=2):
         val_loader   : DataLoader
         orig2model   : dict {category_id → model_label}
         num_classes  : int (background 포함)
+        val_json     : str — val_letterbox.json 경로 (mAP 평가 시 gt_json_path로 사용)
 
     사용 예시:
         from src.preprocessing.dataset import get_loaders
 
         BASE_DIR = '/content/drive/MyDrive/data/초급_프로젝트/dataset'
-        train_loader, val_loader, orig2model, num_classes = get_loaders(base_dir=BASE_DIR)
+        train_loader, val_loader, orig2model, num_classes, val_json = get_loaders(base_dir=BASE_DIR)
 
         # 모델 정의 시
         model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
@@ -484,4 +484,4 @@ def get_loaders(base_dir, batch_size=2, num_workers=2):
         pin_memory=True,
     )
 
-    return train_loader, val_loader, orig2model, num_classes
+    return train_loader, val_loader, orig2model, num_classes, val_json

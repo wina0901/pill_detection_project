@@ -86,7 +86,7 @@ pill_detection_project/
 ```python
 from src.preprocessing.dataset import get_loaders
 
-train_loader, val_loader, orig2model, num_classes = get_loaders(base_dir=BASE_DIR)
+train_loader, val_loader, orig2model, num_classes, val_json = get_loaders(base_dir=BASE_DIR)
 ```
 
 ### YOLO

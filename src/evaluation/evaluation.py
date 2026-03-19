@@ -420,7 +420,7 @@ def plot_compare_histories(histories, labels, metric_key="mAP@75:95", title=None
     plt.show()
 
 # 결과 변환 (YOLO)
-def convert_yolo_results(results, image_ids, model2orig=None):
+def convert_yolo_results(results, image_ids):
     predictions = []
 
     for result, image_id in zip(results, image_ids):
@@ -433,16 +433,9 @@ def convert_yolo_results(results, image_ids, model2orig=None):
         labels = boxes.cls.cpu().numpy().astype(int)
 
         for box, score, label in zip(xyxy, scores, labels):
-            if model2orig is not None:
-                if int(label) not in model2orig:
-                    continue
-                category_id = int(model2orig[int(label)])
-            else:
-                category_id = int(label)
-
             predictions.append({
                 "image_id": int(image_id),
-                "category_id": category_id,
+                "category_id": int(label),
                 "bbox_xyxy": [float(box[0]), float(box[1]), float(box[2]), float(box[3])],
                 "score": float(score)
             })
@@ -450,7 +443,7 @@ def convert_yolo_results(results, image_ids, model2orig=None):
     return predictions
 
 # 결과 변환 (Faster R-CNN / RetinaNet)
-def convert_torchvision_outputs(outputs, image_ids, model2orig=None):
+def convert_torchvision_outputs(outputs, image_ids):
     predictions = []
 
     for output, image_id in zip(outputs, image_ids):
@@ -459,16 +452,9 @@ def convert_torchvision_outputs(outputs, image_ids, model2orig=None):
         labels = output["labels"].detach().cpu().numpy().astype(int)
 
         for box, score, label in zip(boxes, scores, labels):
-            if model2orig is not None:
-                if int(label) not in model2orig:
-                    continue
-                category_id = int(model2orig[int(label)])
-            else:
-                category_id = int(label)
-
             predictions.append({
                 "image_id": int(image_id),
-                "category_id": category_id,
+                "category_id": int(label),
                 "bbox_xyxy": [float(box[0]), float(box[1]), float(box[2]), float(box[3])],
                 "score": float(score)
             })
