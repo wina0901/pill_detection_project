@@ -32,14 +32,18 @@ pill_detection_project/
 │       ├── dataset.py              # OralDrugDataset, DataLoader
 │       └── format_converter.py     # COCO → YOLO 변환
 │
+├── run_preprocessing.py   # ⚡ 전처리 파이프라인 전체 실행 스크립트 (최초 1회)
 ├── requirements.txt
 └── README.md
 ```
 
-> **notebooks/ vs src/ 역할 구분**
-> - `notebooks/`: 데이터를 **만드는** 파이프라인 (1회 실행, 결과물은 Google Drive에 저장)
+> **notebooks/ vs src/ vs run_preprocessing.py 역할 구분**
+> - `notebooks/`: 데이터를 **만드는** 파이프라인 (로직 확인 및 재현용)
 > - `src/`: 만들어진 데이터를 **불러와 학습에 사용**하는 모듈 (팀원들은 이것만 import)
-> - 팀원들은 **노트북을 직접 실행할 필요 없습니다.** 전처리 완료 데이터가 Drive에 준비되어 있습니다.
+> - `run_preprocessing.py`: 전처리 파이프라인을 **한 번에 실행**하는 스크립트
+>
+> ✅ `get_loaders()`는 전처리 산출물이 없으면 **자동으로 `run_preprocessing.py`를 실행**합니다.
+> 단, 구글 드라이브에 원본 데이터(`merged_annotations_train_final.json`)가 반드시 있어야 합니다.
 
 ---
 
