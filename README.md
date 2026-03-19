@@ -32,14 +32,18 @@ pill_detection_project/
 │       ├── dataset.py              # OralDrugDataset, DataLoader
 │       └── format_converter.py     # COCO → YOLO 변환
 │
+├── run_preprocessing.py   # ⚡ 전처리 파이프라인 전체 실행 스크립트 (최초 1회)
 ├── requirements.txt
 └── README.md
 ```
 
-> **notebooks/ vs src/ 역할 구분**
-> - `notebooks/`: 데이터를 **만드는** 파이프라인 (1회 실행, 결과물은 Google Drive에 저장)
+> **notebooks/ vs src/ vs run_preprocessing.py 역할 구분**
+> - `notebooks/`: 데이터를 **만드는** 파이프라인 (로직 확인 및 재현용)
 > - `src/`: 만들어진 데이터를 **불러와 학습에 사용**하는 모듈 (팀원들은 이것만 import)
-> - 팀원들은 **노트북을 직접 실행할 필요 없습니다.** 전처리 완료 데이터가 Drive에 준비되어 있습니다.
+> - `run_preprocessing.py`: 전처리 파이프라인을 **한 번에 실행**하는 스크립트
+>
+> ✅ `get_loaders()`는 전처리 산출물이 없으면 **자동으로 `run_preprocessing.py`를 실행**합니다.
+> 단, 구글 드라이브에 원본 데이터(`merged_annotations_train_final.json`)가 반드시 있어야 합니다.
 
 ---
 
@@ -67,6 +71,11 @@ pill_detection_project/
 * 각 노트북 **Cell 0을 실행**하면 구글 드라이브 마운트 및 레포 클론이 자동으로 처리됩니다.
 * 데이터는 구글 드라이브 `/MyDrive/data/초급_프로젝트/dataset/` 경로에 준비되어 있습니다.
 * Mac 로컬 환경에서는 `../data/`를 자동으로 바라봅니다.
+
+> **💡 PyTorch 설치 안내**
+> - **Colab**: PyTorch가 이미 설치되어 있습니다. 별도 설치 불필요.
+> - **Windows (CUDA 12.x)**: `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
+> - **Mac (M1/M2/M3)**: `pip install torch torchvision torchaudio`
 
 ### Faster R-CNN / RetinaNet
 - `num_classes = 74` (background 포함, NB05 실행 시 출력됩니다)

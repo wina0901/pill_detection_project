@@ -180,9 +180,10 @@ def build_df_from_json(json_path, img_dir):
 
         x, y, w, h = ann['bbox']
         records.append({
-            'image_path':  img_path,
-            'image_id':    os.path.splitext(file_name)[0],  # 확장자 제거
-            'category_id': int(ann['category_id']),
+            'image_path':    img_path,
+            'image_id':      os.path.splitext(file_name)[0],  # 확장자 제거
+            'coco_image_id': int(ann['image_id']),             # 실제 COCO image_id (mAP 평가용)
+            'category_id':   int(ann['category_id']),
             'bbox_x': float(x),
             'bbox_y': float(y),
             'bbox_w': float(w),
@@ -342,7 +343,7 @@ class OralDrugDataset(Dataset):
         target = {
             'boxes':    torch.tensor(boxes,  dtype=torch.float32),
             'labels':   torch.tensor(labels, dtype=torch.int64),
-            'image_id': torch.tensor([idx]),  # 배치 내 위치 추적용 (loss에는 영향 없음)
+            'image_id': torch.tensor([df_img['coco_image_id'].iloc[0]], dtype=torch.int64),
         }
 
         # transforms 적용 (ToImage, ColorJitter, ToDtype 등)

@@ -27,8 +27,11 @@ requests==2.32.5
 # PyTorch — 환경에 맞게 아래 중 하나를 선택하여 설치
 # ─────────────────────────────────────────
 
-# Colab / Windows (CUDA 11.8):
-# pip install torch==2.7.1+cu118 torchvision==0.22.1+cu118 torchaudio==2.7.1+cu118 --index-url https://download.pytorch.org/whl/cu118
+# Colab:
+#   PyTorch가 이미 설치되어 있습니다. 별도 설치 불필요.
+
+# Windows (CUDA 12.x):
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Mac (M1/M2/M3 MPS):
 # pip install torch torchvision torchaudio
