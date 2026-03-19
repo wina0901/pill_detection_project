@@ -36,7 +36,7 @@ import pandas as pd
 from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as T
+import torchvision.transforms.v2 as T  # ✅ v2로 업그레이드 (PyTorch 2.0+)
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +345,7 @@ class OralDrugDataset(Dataset):
             'image_id': torch.tensor([idx]),  # 배치 내 위치 추적용 (loss에는 영향 없음)
         }
 
-        # transforms 적용 (ToTensor, ColorJitter 등)
+        # transforms 적용 (ToImage, ColorJitter, ToDtype 등)
         if self.transforms:
             image = self.transforms(image)
 
@@ -390,9 +390,9 @@ def get_loaders(base_dir, batch_size=2, num_workers=2):
                      Faster R-CNN / RetinaNet 모델 정의 시 그대로 전달하세요.
 
     【transforms 설명】
-      train : ColorJitter(밝기/대비 ±20%) + ToTensor
+      train : ColorJitter(밝기/대비 ±20%) + ToImage + ToDtype
               → 다양한 조명 조건에 강건하게 만들기 위한 증강
-      val   : ToTensor만 적용 (증강 없이 원본 그대로 평가)
+      val   : ToImage + ToDtype만 적용 (증강 없이 원본 그대로 평가)
 
       T.Normalize는 적용하지 않습니다.
       Faster R-CNN / RetinaNet은 모델 내부(GeneralizedRCNNTransform)에서
@@ -450,13 +450,16 @@ def get_loaders(base_dir, batch_size=2, num_workers=2):
     print(f"✅ Val  : {df_val['image_id'].nunique()}장 / {len(df_val)}개")
 
     # ── transforms 정의 ──────────────────────────────────────────
+    # ✅ torchvision.transforms.v2 사용 (PyTorch 2.0+)
     # T.Normalize 미적용 이유: Faster R-CNN / RetinaNet 내부에서 자동 처리됨
     train_transforms = T.Compose([
-        T.ColorJitter(brightness=0.2, contrast=0.2),  # 밝기/대비 랜덤 변화 (증강)
-        T.ToTensor(),   # PIL → [0, 1] float32 텐서 [C, H, W]
+        T.ToImage(),                                      # PIL → uint8 Image 텐서
+        T.ColorJitter(brightness=0.2, contrast=0.2),     # 밝기/대비 랜덤 변화 (증강)
+        T.ToDtype(torch.float32, scale=True),             # uint8 → [0, 1] float32
     ])
     val_transforms = T.Compose([
-        T.ToTensor(),   # 검증은 증강 없이 그대로 평가
+        T.ToImage(),                                      # PIL → uint8 Image 텐서
+        T.ToDtype(torch.float32, scale=True),             # 검증은 증강 없이 그대로 평가
     ])
 
     # ── Dataset / DataLoader 생성 ─────────────────────────────────
