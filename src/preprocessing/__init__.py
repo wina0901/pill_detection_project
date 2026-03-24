@@ -1,39 +1,56 @@
 """
 src/preprocessing/__init__.py
 ==============================
-HealthEat 데이터 전처리 패키지
+HealthEat 데이터 전처리 패키지  ·  v3
 
 파이프라인 실행 순서
-  [Step 1] transforms.run_letterbox_pipeline  → Letterbox 800×800 변환 + JSON 갱신
-  [Step 2] transforms.apply_clahe_to_folder   → L-channel CLAHE 대비 강화 (in-place)
-  [Step 3] augmentation.run_copy_paste        → Copy-Paste 소수 클래스 증강
-  [Step 4] dataset.get_loaders                → Faster R-CNN / RetinaNet DataLoader
-  [Step 4] format_converter.run_yolo_conversion → YOLO 라벨 변환 + data.yaml 생성
+  [NB01] EDA
+  [NB02] augmentation.run_stratified_split (수동) +
+         augmentation.extract_minority_crops +
+         augmentation.run_copy_paste         → train_augmented_final.json
+  [NB03] transforms.run_letterbox_pipeline  → letterbox_images/ + *_letterbox.json
+  [NB04] transforms.apply_clahe_to_folder   → in-place CLAHE
+  [NB05] dataset.get_loaders                → DataLoader
 
 모듈 구성
-  transforms.py      : letterbox_with_bbox, run_letterbox_pipeline, apply_clahe_to_folder
-  augmentation.py    : check_overlap, blend_image, run_copy_paste
-  dataset.py         : OralDrugDataset, build_df_from_json, get_loaders, validate_coco, denormalize
+  augmentation.py  : make_pill_mask, blend_with_mask, check_overlap,
+                     extract_minority_crops, run_copy_paste
+  transforms.py    : letterbox_with_bbox, run_letterbox_pipeline, apply_clahe_to_folder
+  dataset.py       : OralDrugDataset, build_df_from_json, get_loaders,
+                     validate_coco, denormalize, collate_fn
   format_converter.py: convert_coco_to_yolo, generate_data_yaml, run_yolo_conversion
+  viz_utils.py     : show_samples, show_augmented_samples, show_mask_preview,
+                     show_class_distribution, show_letterbox_comparison
+
+v3 변경
+  - augmentation.py: 마스크 기반 Copy-Paste (사각형 아티팩트 제거)
+  - viz_utils.py   : 노트북 공용 시각화 유틸리티 추가
 """
 
 from .transforms       import letterbox_with_bbox, run_letterbox_pipeline, apply_clahe_to_folder
-from .augmentation     import check_overlap, blend_image, run_copy_paste
+from .augmentation     import (make_pill_mask, blend_with_mask, check_overlap,
+                                extract_minority_crops, run_copy_paste)
 from .dataset          import (OralDrugDataset, build_df_from_json,
                                 get_loaders, validate_coco, denormalize,
                                 collate_fn, IMAGENET_MEAN, IMAGENET_STD)
 from .format_converter import (convert_coco_to_yolo, generate_data_yaml,
                                 run_yolo_conversion)
+from .viz_utils        import (show_samples, show_augmented_samples, show_mask_preview,
+                                show_class_distribution, show_letterbox_comparison)
 
 __all__ = [
+    # augmentation (v3)
+    'make_pill_mask', 'blend_with_mask', 'check_overlap',
+    'extract_minority_crops', 'run_copy_paste',
     # transforms
     'letterbox_with_bbox', 'run_letterbox_pipeline', 'apply_clahe_to_folder',
-    # augmentation
-    'check_overlap', 'blend_image', 'run_copy_paste',
     # dataset
     'OralDrugDataset', 'build_df_from_json', 'get_loaders',
     'validate_coco', 'denormalize', 'collate_fn',
     'IMAGENET_MEAN', 'IMAGENET_STD',
     # format_converter
     'convert_coco_to_yolo', 'generate_data_yaml', 'run_yolo_conversion',
+    # viz_utils
+    'show_samples', 'show_augmented_samples', 'show_mask_preview',
+    'show_class_distribution', 'show_letterbox_comparison',
 ]
