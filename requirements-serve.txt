@@ -1,0 +1,40 @@
+# =========================================================
+# Pill Detection - Serving Environment
+# FastAPI + YOLO Ensemble Inference + Simple Web UI
+# =========================================================
+
+# -------------------------
+# Core
+# -------------------------
+numpy==1.26.4
+Pillow==10.4.0
+qrcode==8.2
+
+# -------------------------
+# API Server
+# -------------------------
+fastapi==0.116.1
+uvicorn==0.35.0
+python-multipart==0.0.20
+jinja2==3.1.6
+
+# -------------------------
+# Model Inference
+# -------------------------
+ultralytics==8.4.24
+
+# -------------------------
+# Utils / Visualization
+# -------------------------
+opencv-python==4.10.0.84
+PyYAML==6.0.2
+tqdm==4.67.1
+
+# -------------------------
+# PyTorch (직접 설치)
+# -------------------------
+# GPU
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# CPU
+# pip install torch torchvision torchaudio

@@ -1,103 +1,161 @@
-# 💊 HealthEat: Advanced Data Engineering Pipeline
-**Lead Architect: 한의정**
-
-Object Detection(Faster R-CNN / RetinaNet / YOLO) 모델 성능 극대화를 위한 데이터 전처리 및 증강 파이프라인입니다.
-
-## 🚀 Key Achievements
-1. **Data Leakage 원천 차단**: Stratified Split을 통해 검증 데이터 독립성 100% 보장.
-2. **소수 클래스 방어**: 지능형 Copy-Paste 증강 엔진으로 희귀 알약 객체 강제 확보 (4,095개 → 6,199개).
-3. **800x800 규격화 및 무결성**: Letterbox 정규화 및 이미지 경계를 벗어나는 BBox(Out-of-bounds) 정밀 클리핑 완료 (이슈 0건).
-4. **시력 교정(Feature Enhancement)**: L-channel CLAHE 전처리를 통한 알약 각인/음각 대비 극대화.
+# 💊 Pill Detection Project  
+> AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 
 ---
 
-## 📂 Repository Structure
+## 협업 일지
+
+모두 같은 노션페이지에 작성하였습니다.
+- 링크 연결하기
+
+---
+
+## 📌 프로젝트 소개
+
+헬스잇의 AI 엔지니어링 팀은 유저가 본인의 모바일 애플리케이션으로 자신이 복용중인 약 사진을 찍었을 때, 
+이미지 인식을 통해 해당 약에 대한 정보를 확인할 수 있는 모델을 만들어야하는 미션
+
+- 프로젝트 기간 : 
+- 평가 : kaggle mAP@[0.75:0.95] 지표
+- 팀 구성
+역할	담당자	핵심 업무
+Project Manager        김기현	프로젝트 총괄 관리, 일정 조율
+Data Engineer          한의정	EDA, 데이터 전처리, 증강 기법
+Experimentation Lead   김범수   RetinaNet model을 통한 다양한 실험
+Experimentation Lead   박찬영   Faster RCNN을 통한 다양한 실험
+Experimentation Lead   유소연   YOLO model을 통한 다양한 실험
+
+---
+
+## 🎯 주요 기능
+
+- 📷 이미지 업로드 및 실시간 추론
+- 🟩 Bounding Box 시각화
+- 📊 Confidence Score 표시
+- 💊 약 이름 + 특징 정보 제공
+- ✂️ 탐지된 알약 crop 이미지 제공
+- 📱 모바일 접속 (QR 코드 지원)
+
+---
+
+## ⚙️ 실행 방법
+
+### 📦 1. 프로젝트 다운로드
+
+```bash
+git clone https://github.com/wina0901/pill_detection_project.git
+cd PILL_DETECTION_PROJECT
+```
+
+### 📁 2. 필수 파일 추가
+
+#### 🔹 data 폴더
 
 ```
-pill_detection_project/
-├── notebooks/              # 데이터 파이프라인 구축 히스토리 (로직 확인 및 재현용)
-│   ├── 01_data_eda.ipynb
-│   ├── 02_split_and_copy_paste_augmentation.ipynb
-│   ├── 03_letterbox_normalization.ipynb
-│   ├── 04_clahe_preprocessing.ipynb
-│   └── 05_pytorch_dataset_dataloader.ipynb
+data/
+├─ merged_annotations_train_final.json
+└─ meta.csv
+```
+
+#### 🔹 모델 파일
+
+```
+models/yolo/
+├─ yolov8s_v2_v3_ft_uf_lr_0p0003_best.pt
+└─ yolo11m_v2_v3_ft_uf_lr_0p0005_best.pt
+```
+
+---
+
+## 💻 Windows 실행
+
+```
+start_for_windows.bat
+```
+
+---
+
+## 🍎 macOS 실행
+
+### 최초 1회
+```bash
+chmod +x start_for_mac.command
+```
+
+### 실행
+```bash
+./start_for_mac.command
+```
+
+---
+
+## 🌐 접속
+
+```
+http://127.0.0.1:8000
+```
+
+---
+
+## 📱 모바일 접속
+
+- 같은 Wi-Fi 연결
+- 콘솔 QR 코드 스캔
+
+---
+
+## 📊 평가 지표
+
+- mAP@0.75:0.95
+- 최종 성능 = 0.99093
+
+
+---
+
+## 🧩 기술 스택
+
+- Python
+- FastAPI
+- PyTorch
+- Ultralytics YOLO
+- HTML / CSS / JS
+
+---
+
+## 📁 프로젝트 구조
+
+```
+PILL_DETECTION_PROJECT/
+├── data/                   # 데이터셋 
+│
+├── models/                 # 모델별 가중치
+│ ├── fasterrcnn/
+│ ├── retinanet/
+│ └── yolo/
+│
+├── notebooks/              
+│
+├── results/                # 모델별 제출파일 
+│ ├── fasterrcnn/
+│ ├── retinanet/
+│ └── yolo/
 │
 ├── src/
-│   ├── utils/
-│   │   └── eda_tools.py            # EDA 시각화 유틸리티
-│   └── preprocessing/              # 모델 학습 시 import하여 사용
-│       ├── __init__.py
-│       ├── transforms.py           # Letterbox 변환, CLAHE
-│       ├── augmentation.py         # Copy-Paste 증강
-│       ├── dataset.py              # OralDrugDataset, DataLoader
-│       └── format_converter.py     # COCO → YOLO 변환
+│ ├── evaluation/           # 평가 지표 코드
+│ │
+│ ├── models/               # 모델별 실험 코드
+│ │ ├── fasterrcnn/
+│ │ ├── retinanet/
+│ │ └── yolo/
+│ │
+│ ├── preprocessing/         # 데이터 전처리 코드
+│ └── utils/
 │
-├── run_preprocessing.py   # ⚡ 전처리 파이프라인 전체 실행 스크립트 (최초 1회)
+├── run_preprocessing.py
 ├── requirements.txt
-└── README.md
-```
-
-> **notebooks/ vs src/ vs run_preprocessing.py 역할 구분**
-> - `notebooks/`: 데이터를 **만드는** 파이프라인 (로직 확인 및 재현용)
-> - `src/`: 만들어진 데이터를 **불러와 학습에 사용**하는 모듈 (팀원들은 이것만 import)
-> - `run_preprocessing.py`: 전처리 파이프라인을 **한 번에 실행**하는 스크립트
->
-> ✅ `get_loaders()`는 전처리 산출물이 없으면 **자동으로 `run_preprocessing.py`를 실행**합니다.
-> 단, 구글 드라이브에 원본 데이터(`merged_annotations_train_final.json`)가 반드시 있어야 합니다.
-
----
-
-## ⚙️ 데이터 전처리 파이프라인 순서
-
-```
-[NB02] Stratified Split (9:1) + Copy-Paste 증강
-    → train_augmented_final.json / val.json
-        ↓
-[NB03] Letterbox 800×800 규격화 + BBox 클리핑
-    → train_letterbox.json / val_letterbox.json
-    → letterbox_images/train, val/
-        ↓
-[NB04] L-channel CLAHE (in-place)
-    → letterbox_images/train, val/ (덮어쓰기)
-        ↓
-[NB05] DataLoader 구성 + YOLO 라벨 변환
-    → yolo_labels/train, val/ + data.yaml
+├── README.md
+└── .gitignore
 ```
 
 ---
-
-## ⚠️ Note for Modeling Team (Colab Users)
-
-* 각 노트북 **Cell 0을 실행**하면 구글 드라이브 마운트 및 레포 클론이 자동으로 처리됩니다.
-* 데이터는 구글 드라이브 `/MyDrive/data/초급_프로젝트/dataset/` 경로에 준비되어 있습니다.
-* Mac 로컬 환경에서는 `../data/`를 자동으로 바라봅니다.
-
-> **💡 PyTorch 설치 안내**
-> - **Colab**: PyTorch가 이미 설치되어 있습니다. 별도 설치 불필요.
-> - **Windows (CUDA 12.x)**: `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
-> - **Mac (M1/M2/M3)**: `pip install torch torchvision torchaudio`
-
-### Faster R-CNN / RetinaNet
-- `num_classes = 74` (background 포함, NB05 실행 시 출력됩니다)
-- `orig2model`: category_id → 모델 레이블 매핑 (1-based, 0=background)
-- DataLoader에서 `T.Normalize` 미적용 (모델 내부 `GeneralizedRCNNTransform`에서 처리)
-- 추론 시각화 시 역정규화 필요: `mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]`
-
-```python
-from src.preprocessing.dataset import get_loaders
-
-train_loader, val_loader, orig2model, num_classes, val_json = get_loaders(base_dir=BASE_DIR)
-```
-
-### YOLO
-- 레이블은 0-based (Faster R-CNN `orig2model`과 1 차이)
-- NB05 실행 시 `yolo_labels/` 및 `data.yaml` 자동 생성
-
-```python
-from src.preprocessing.format_converter import run_yolo_conversion
-
-run_yolo_conversion(base_dir=BASE_DIR)
-```
-
-### 평가 지표 산출
-- YOLO(0-based)와 Faster R-CNN(1-based) 결과 비교 시 인덱스 통일 필요 (YOLO 예측값 +1)
+ 

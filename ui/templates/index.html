@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>알약 탐지 데모</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div class="phone-frame">
+      <header class="hero">
+        <p class="eyebrow">AI 8기 2팀</p>
+        <h1>알약 탐지 프로젝트</h1>
+        <p class="sub">
+          
+        </p>
+
+        <div class="notice">
+          본 서비스는 객체 탐지 프로젝트 데모입니다. <br>
+          실제 약 식별, 복용 여부, 복약 상담은 반드시 의사 또는 약사와 상담해 주세요.
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card">
+          <div class="card-header">
+            <h2>이미지 보기</h2> 
+          </div>
+
+          <div class="image-frame">
+            <img id="mainImage" alt="이미지 보기" />
+            <div id="imagePlaceholder" class="placeholder">
+              업로드한 이미지가 여기에 보이고,<br />
+              분석 후에는 같은 자리에서 결과 이미지로 바뀝니다.
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>실행</h2>
+
+          <input id="fileInput" type="file" accept=".png,.jpg,.jpeg,.bmp,.webp" hidden />
+
+          <div class="actions">
+            <button id="uploadBtn" type="button">이미지 업로드하기</button>
+            <button id="predictBtn" type="button" disabled>추론하기</button>
+            <button id="resetBtn" type="button" class="secondary">초기화</button>
+          </div>
+
+          <div id="status" class="status idle">이미지를 선택해 주세요.</div>
+        </section>
+
+        <section class="card">
+          <h2>탐지된 약 정보</h2>
+          <div id="detectionList" class="detection-list">
+            <div class="empty-info">아직 탐지된 약 정보가 없습니다.</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <details class="json-details">
+            <summary>예측 결과 JSON 보기</summary>
+            <pre id="jsonOutput" class="json-box">{
+  "message": "아직 추론 결과가 없습니다."
+}</pre>
+          </details>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const predictBtn = document.getElementById("predictBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const mainImage = document.getElementById("mainImage");
+    const imagePlaceholder = document.getElementById("imagePlaceholder");
+    const jsonOutput = document.getElementById("jsonOutput");
+    const statusBox = document.getElementById("status");
+    const detectionList = document.getElementById("detectionList");
+
+    let selectedFile = null;
+    let previewObjectUrl = null;
+
+    function setStatus(message, type = "idle") {
+      statusBox.textContent = message;
+      statusBox.className = `status ${type}`;
+    }
+
+    function resetUI() {
+      selectedFile = null;
+      fileInput.value = "";
+
+      if (previewObjectUrl) {
+        URL.revokeObjectURL(previewObjectUrl);
+        previewObjectUrl = null;
+      }
+
+      mainImage.removeAttribute("src");
+      mainImage.style.display = "none";
+      imagePlaceholder.style.display = "flex";
+
+      jsonOutput.textContent = `{\n  "message": "아직 추론 결과가 없습니다."\n}`;
+      detectionList.innerHTML = `<div class="empty-info">아직 탐지된 약 정보가 없습니다.</div>`;
+
+      predictBtn.disabled = true;
+      setStatus("이미지를 선택해 주세요.", "idle");
+    }
+
+    function showPreview(file) {
+      if (previewObjectUrl) {
+        URL.revokeObjectURL(previewObjectUrl);
+      }
+
+      previewObjectUrl = URL.createObjectURL(file);
+      mainImage.src = previewObjectUrl;
+      mainImage.style.display = "block";
+      imagePlaceholder.style.display = "none";
+    }
+
+    function renderDetections(detections) {
+      if (!detections || detections.length === 0) {
+        detectionList.innerHTML = `<div class="empty-info">탐지된 객체가 없습니다.</div>`;
+        return;
+      }
+
+      detectionList.innerHTML = detections.map((det, idx) => {
+        return `
+          <div class="pill-card">
+            <div class="pill-thumb-wrap">
+              <img class="pill-thumb" src="${det.crop_url}" alt="${det.display_name}" />
+            </div>
+            <div class="pill-meta">
+              <div class="pill-title-row">
+                <h3>${idx + 1}. ${det.display_name}</h3>
+                <span class="score">${Number(det.score).toFixed(2)}</span>
+              </div>
+              <p><strong>특징</strong> ${det.feature || "정보 없음"}</p>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function requestPrediction(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/predict-ui", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "추론 요청 실패");
+      }
+
+      return await response.json();
+    }
+
+    uploadBtn.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+
+      if (!file) {
+        resetUI();
+        return;
+      }
+
+      selectedFile = file;
+      showPreview(file);
+      predictBtn.disabled = false;
+      setStatus("이미지가 선택되었습니다. 추론하기 버튼을 눌러주세요.", "ready");
+    });
+
+    resetBtn.addEventListener("click", () => {
+      resetUI();
+    });
+
+    predictBtn.addEventListener("click", async () => {
+      if (!selectedFile) {
+        setStatus("먼저 이미지를 선택해 주세요.", "error");
+        return;
+      }
+
+      predictBtn.disabled = true;
+      setStatus("분석 중입니다. 잠시만 기다려 주세요...", "loading");
+
+      try {
+        const data = await requestPrediction(selectedFile);
+
+        jsonOutput.textContent = JSON.stringify(data, null, 2);
+        renderDetections(data.detections || []);
+
+        if (data.result_image_url) {
+          mainImage.src = `${data.result_image_url}?t=${Date.now()}`;
+          mainImage.style.display = "block";
+          imagePlaceholder.style.display = "none";
+        }
+
+        setStatus(`분석 완료: ${data.num_predictions}개 객체 탐지`, "success");
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || "분석 중 오류가 발생했습니다.", "error");
+      } finally {
+        predictBtn.disabled = false;
+      }
+    });
+
+    resetUI();
+  </script>
+</body>
+</html>
