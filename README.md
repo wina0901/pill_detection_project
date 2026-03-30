@@ -61,7 +61,8 @@ models/yolo/
 ├─ yolov8s_v2_v3_ft_uf_lr_0p0003_best.pt
 └─ yolo11m_v2_v3_ft_uf_lr_0p0005_best.pt
 ```
-필수 파일 : 구글드라이브 내 전달.zip 파일 
+(필수 파일은 아래 구글드라이브에서 전달.zip을 받으시면 됩니다!)
+
 [구글 드라이브 링크](https://drive.google.com/drive/folders/1ED5sme7FjaaUazkk6336glpzjrV-bVGY)
 
 ---
