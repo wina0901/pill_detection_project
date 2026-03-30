@@ -25,6 +25,8 @@ HealthEat 데이터 전처리 패키지  ·  v3
 v3 변경
   - augmentation.py: 마스크 기반 Copy-Paste (사각형 아티팩트 제거)
   - viz_utils.py   : 노트북 공용 시각화 유틸리티 추가
+  - aihub_merge.py 추가 (데이터셋 병합 시 1회 시행, True로 설정 후 실행, 완료 후 False로 변경)
+  
 """
 
 from .transforms       import letterbox_with_bbox, run_letterbox_pipeline, apply_clahe_to_folder
