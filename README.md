@@ -1,12 +1,17 @@
-# 💊 Pill Detection Project  
+#  Pill Detection Project  
 AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 
 <br>
 
-## 🏆 협업 일지
+## 협업 일지
 
 모두 같은 노션페이지에 작성하였습니다.
-- 링크 연결하기
+- [링크](https://www.notion.so/32506b12e06280dea5fdf832300228b5?v=32506b12e06280998ab9000c52ef2023)
+<br>
+
+## 최종 보고서
+
+- 파일 첨부하기
 <br>
 
 ## 📌 프로젝트 소개
@@ -18,7 +23,7 @@ AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 - 평가 지표 | Kaggle mAP@0.75:0.95 
 <br>
 
-## 👥 팀 구성 및 역할
+## 팀 구성 및 역할
 
 | 역할 | 담당자 | 핵심 업무 |
 |------|--------|-----------|
@@ -30,7 +35,7 @@ AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 
 <br>
 
-## 🎯 주요 기능
+## 주요 기능
 
 - 내용 추가하기 (전처리 과정 , 실험 내용, 서빙 내용)
 
@@ -38,14 +43,14 @@ AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 
 ## ⚙️ 실행 방법
 
-### 📦 1. 프로젝트 다운로드
+### 1. 프로젝트 다운로드
 
 ```bash
 git clone https://github.com/wina0901/pill_detection_project.git
 cd PILL_DETECTION_PROJECT
 ```
 
-### 📁 2. 필수 파일 추가
+### 2. 필수 파일 추가
 
 ```
 data/
@@ -58,13 +63,13 @@ models/yolo/
 ```
 ---
 
-## 💻 Windows 실행
+## Windows 실행
 
 ```
 start_for_windows.bat
 ```
 
-## 🍎 macOS 실행
+## macOS 실행
 
 ### 최초 1회
 ```bash
@@ -78,7 +83,7 @@ chmod +x start_for_mac.command
 ---
 
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```text
 PILL_DETECTION_PROJECT/
