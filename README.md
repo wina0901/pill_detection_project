@@ -37,7 +37,7 @@ AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 
 ## 최종 보고서
 
-- 파일 첨부하기
+- [구글 드라이브](https://drive.google.com/drive/folders/1ED5sme7FjaaUazkk6336glpzjrV-bVGY)
 
 <br>
 
