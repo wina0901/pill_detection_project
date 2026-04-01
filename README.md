@@ -38,7 +38,7 @@ AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 ## 최종 보고서
 
 - 파일 첨부하기
-- 
+
 <br>
 
 ## 주요 기능
@@ -66,13 +66,13 @@ MobileNetV3 백본 교체로 학습 시간 70% 단축, Optuna 하이퍼파라미
 
 ### RetinaNet
 
-내용 작성
+👉 [상세 내용 보기](src/models/retinanet/)
 
 <br>
 
 ### YOLO
 
-내용 작성
+👉 [상세 내용 보기](src/models/yolo/)
 
 <br>
 
