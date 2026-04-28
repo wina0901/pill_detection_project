@@ -1,6 +1,7 @@
 #  Pill Detection Project  
 AI 8기 2팀 — 알약 객체 탐지 & 정보 제공 서비스
 
+<img src="/demo.gif" width="400"/>
 <br>
 
 ## 프로젝트 소개
